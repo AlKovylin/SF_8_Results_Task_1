@@ -5,83 +5,57 @@ namespace SF_8_Results_Task_1
 {
     class Program
     {
+        static int chD = 0;
+        static int chF = 0;
+
         static void Main(string[] args)
         {
             Console.WriteLine("\tПРОГРАММА УДАЛЕНИЯ ФАЙЛОВ И ПАПОК В УКАЗАННОЙ ДИРЕКТОРИИ, \n\t\tКОТОРЫЕ НЕ ИСПОЛЬЗОВАЛИСЬ БОЛЕЕ 30 МИН.\n");
             Console.Write("Введите путь до папки: ");
-            string pachFolder = "D://SF8FFD"; // Console.ReadLine();
+            string pachFolder =  Console.ReadLine(); //"C://SF8FFD";
 
-            try
+            if (Directory.Exists(pachFolder))
             {
-                if (Directory.Exists(pachFolder)) // Проверим, что директория существует
-                {
-                    DeleteFile(pachFolder);//проверяем файлы в папке назначения
-                    DeleteDirectory(pachFolder);//проверяем файлы во вложенных файлах
-                }
-                else
-                {
-                    Console.WriteLine("Папка не существует или неверно указан путь");
-                }
+                DeleteFolderAndFiles(pachFolder);
+                Console.WriteLine($"Удалено: {chD} папок и {chF} файлов");
+                Console.WriteLine("Программа завершена.");
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine("Нет доступа." + ex.Message);
+                Console.WriteLine("Папка не существует. Или неверно задан путь.");
             }
+
         }
 
-        /// <summary>
-        /// Рекурсия перебора вложенных папок и удаления папок файлы из которых были удалены полностью.
-        /// </summary>
-        /// <param name="pachFolder">путь до исходного каталога</param>
-        /// <returns></returns>
-        private static int DeleteDirectory(string pachFolder)
+        private static void DeleteFolderAndFiles(string folder)
         {
-            int ch = 0;
-
-            string[] dirs = Directory.GetDirectories(pachFolder);//получаем список вложенных папок
             try
             {
-                for (int i = 0; i < dirs.Length; i++)
+                DirectoryInfo dirInfo = new DirectoryInfo(folder);
+                DirectoryInfo[] diDir = dirInfo.GetDirectories();
+                FileInfo[] diFiles = dirInfo.GetFiles();
+                foreach (FileInfo f in diFiles)
                 {
-                    DeleteDirectory(dirs[i]);//идём вглубь
-                    if (DeleteFile(dirs[i]))//проверяем файлы в текущей папке
-                        Directory.Delete(dirs[i]);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-            return ch++;
-        }
-
-        /// <summary>
-        /// Удаляет файлы которые не использовались более 30 мин.
-        /// </summary>
-        /// <param name="pachFolder">путь к папке с файлами</param>
-        /// <returns>bool - если были удалены все файлы, false - если не все.</returns>
-        private static bool DeleteFile(string pachFolder)
-        {
-            string[] files = Directory.GetFiles(pachFolder);//получаем список вложенных файлов
-            int ch = 0;
-
-            for (int i = 0; i < files.Length; i++)
-            {
-                try
-                {
-                    if ((DateTime.Now - File.GetLastAccessTime(files[i])) > TimeSpan.FromMinutes(1))
+                    if ((DateTime.Now - f.LastAccessTime) > TimeSpan.FromMinutes(1))
                     {
-                        File.Delete(files[i]);
-                        ch++;
+                        f.Delete();
+                        chF++;
                     }
                 }
-                catch (Exception ex)
+                foreach (DirectoryInfo df in diDir)
                 {
-                    Console.WriteLine("Нет доступа." + ex.Message);
+                    DeleteFolderAndFiles(df.FullName);
+                }
+                if (dirInfo.GetDirectories().Length == 0 && dirInfo.GetFiles().Length == 0)
+                {
+                    dirInfo.Delete();
+                    chD++;
                 }
             }
-            if (ch == files.Length) { return true; }
-            else { return false; }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Произошла ошибка: " + ex.Message);
+            }
         }
     }
 }
